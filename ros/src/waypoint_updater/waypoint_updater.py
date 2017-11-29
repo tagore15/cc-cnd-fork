@@ -21,7 +21,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50  # Number of waypoints we will publish. You can change this number
+MAX_VELOCITY = 40.0
 
 
 class WaypointUpdater(object):
@@ -53,7 +54,9 @@ class WaypointUpdater(object):
     # ============================================================
     def pose_cb(self, msg):
         # Store the current coordinates in the class object
-        self.current_pose = msg
+        self.current_pose = msg.pose
+
+        # Currently these vars are not used
         self.current_x = msg.pose.position.x
         self.current_y = msg.pose.position.y
         self.current_z = msg.pose.position.z
@@ -70,28 +73,13 @@ class WaypointUpdater(object):
     def wp_distances(self):
         # Compute the distances to all base waypoints and store in class
         try:
-            wp_dist = []
-            xi = self.current_x
-            yi = self.current_y
-            zi = self.current_z
-            count = 0
-            max_dist = 1.0e8
-            for i,wp in enumerate(self.base_wp):
-                xj = wp.pose.pose.position.x
-                yj = wp.pose.pose.position.y
-                zj = wp.pose.pose.position.z
+            def dist(a, b):
+                return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
 
-                dij = math.sqrt( (xi-xj)**2 + (yi-yj)**2 + (zi-zj)**2 )
-
-                if dij < max_dist:
-                    max_dist = dij
-                    next_wp = i
-
-                wp_dist.append((dij, wp, count))
-                count += 1
+            wp_dist = [(dist(self.current_pose.position, wp.pose.pose.position), wp, wp_id) for (wp_id, wp) in enumerate(self.base_wp)]
 
             self.wp_dist = sorted(wp_dist)
-            self.next_wp = next_wp
+
             return True
 
         except Exception as e:
@@ -111,8 +99,6 @@ class WaypointUpdater(object):
         msg.header.frame_id = '/world'
         msg.header.stamp = rospy.Time.now()
 
-        max_vel = 40.0
-
         for i in range(LOOKAHEAD_WPS):
             wpi = self.wp_dist[i][1]
             if i == 0:
@@ -121,7 +107,7 @@ class WaypointUpdater(object):
                                                            self.wp_dist[i][0]))
             
             # Do we need deepcopy here??
-            wpi.twist.twist.linear.x = max_vel
+            wpi.twist.twist.linear.x = MAX_VELOCITY
             msg.waypoints.append(wpi)
 
         self.final_waypoints_pub.publish(msg)
@@ -153,7 +139,10 @@ class WaypointUpdater(object):
 
 
 if __name__ == '__main__':
-    try:
-        WaypointUpdater()
-    except rospy.ROSInterruptException:
-        rospy.logerr('Could not start waypoint updater node.')
+    # try:
+    #     WaypointUpdater()
+    # except rospy.ROSInterruptException:
+    #     rospy.logerr('Could not start waypoint updater node.')
+    a = [(1, 4, 5), (5, 6, 7), (6, 7, 8)]
+    print(sorted(a))
+

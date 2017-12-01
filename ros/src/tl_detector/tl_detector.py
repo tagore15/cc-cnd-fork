@@ -56,7 +56,7 @@ class TLDetector(object):
         
     def getState():
         closestDist = 9999999
-        state = 0
+        state = Null
         for light in self.states:
             x = light.pose.position.x-self.current_x
             y = light.pose.position.y-self.current_y
@@ -71,7 +71,7 @@ class TLDetector(object):
         image = cv2_to_imgmsg(cv_image, encoding="rgb8")
         state = getState()
         if state:
-            title = state + str(self.int)
+            title = str(state) + str(self.int)
             imwrite(title, image)
         
         

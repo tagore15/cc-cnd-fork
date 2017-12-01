@@ -18,11 +18,15 @@ class TLDetector(object):
         rospy.init_node('tl_detector')
 
         self.pose = None
+        self.current_x = None
+        self.current_y = None
+        self.current_z = None
         self.waypoints = None
         self.camera_image = None
         self.lights = []
         self.int = 0
         self.states = None
+        self.nearestWP = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -34,21 +38,35 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        rospy.Subscriber('/image_color', Image, self.image_cb)
+        
     def pose_cb(self, msg):
         self.pose = msg
+        self.current_x = msg.pose.position.x
+        self.current_y = msg.pose.position.y
+        self.current_z = msg.pose.position.z
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+   
     
     def traffic_cb(self, msg):
         self.states = msg
         
     def getState():
-        
-
+        closestDist = 9999999
+        state = 0
+        for light in self.states:
+            x = light.pose.position.x-self.current_x
+            y = light.pose.position.y-self.current_y
+            z = light.pose.position.z-self.current_z
+            dist_sq = x*x+y*y+z*z
+            if dist_sq<closestDist:
+                closestDist = dist_sq
+                state = light.state
+        return state
+   
     def image_cb(self, msg):
         image = cv2_to_imgmsg(cv_image, encoding="rgb8")
         state = getState()

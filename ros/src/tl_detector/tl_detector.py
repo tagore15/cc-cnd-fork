@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+import sys
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
@@ -10,6 +11,8 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+from cv_bridge import CvBridge, CvBridgeError
+
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -25,8 +28,6 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.int = 0
-        self.states = None
-        self.nearestWP = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -52,27 +53,28 @@ class TLDetector(object):
    
     
     def traffic_cb(self, msg):
-        self.states = msg
+        self.lights = msg
         
     def getState():
-        closestDist = 9999999
+        closestDist = sys.maxsize
         state = Null
-        for light in self.states:
-            x = light.pose.position.x-self.current_x
-            y = light.pose.position.y-self.current_y
-            z = light.pose.position.z-self.current_z
-            dist_sq = x*x+y*y+z*z
-            if dist_sq<closestDist:
+        for light in self.lights:
+            x = light.pose.position.x - self.current_x
+            y = light.pose.position.y - self.current_y
+            z = light.pose.position.z - self.current_z
+            dist_sq = x*x + y*y + z*z
+            if dist_sq < closestDist:
                 closestDist = dist_sq
                 state = light.state
         return state
    
     def image_cb(self, msg):
-        image = cv2_to_imgmsg(cv_image, encoding="rgb8")
+        image = bridge.imgmsg_to_cv2(cv_image, desired_encoding="bgr8")
         state = getState()
         if state:
             title = str(state) + str(self.int)
-            imwrite(title, image)
+            int += 1
+            imwrite(~/cc-cnd-fork/data/title, image)
         
         
 
